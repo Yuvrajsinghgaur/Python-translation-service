@@ -3,7 +3,6 @@ Voice Translation Service for NurseConnect
 Handles speech-to-text, translation, and text-to-speech for multilingual communication
 """
 
-
 import os
 import asyncio
 import logging
@@ -11,16 +10,16 @@ from typing import Dict, List, Optional, Tuple, BinaryIO
 from dataclasses import dataclass
 from datetime import datetime
 import tempfile
-import wave
-import json
+import io
+import base64
 
+import sounddevice as sd
+import soundfile as sf
+import numpy as np
 import speech_recognition as sr
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
-import numpy as np
 from gtts import gTTS
-import io
-import base64
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +34,31 @@ class VoiceTranslationResult:
     processing_time: float
     audio_url: Optional[str] = None
 
+
 class VoiceTranslationService:
     def __init__(self):
         self.recognizer = sr.Recognizer()
-        self.microphone = sr.Microphone()
+        # ❌ Removed PyAudio Microphone dependency
 
-        # Adjust for ambient noise
+    async def record_audio(self, duration: int = 5, samplerate: int = 16000) -> bytes:
+        """
+        Record audio from microphone using sounddevice and return WAV bytes.
+        """
         try:
-            with self.microphone as source:
-                self.recognizer.adjust_for_ambient_noise(source)
+            logger.info(f"Recording {duration}s of audio at {samplerate}Hz...")
+            recording = sd.rec(
+                int(duration * samplerate),
+                samplerate=samplerate,
+                channels=1,
+                dtype="int16"
+            )
+            sd.wait()
+            with io.BytesIO() as buffer:
+                sf.write(buffer, recording, samplerate, format="WAV")
+                return buffer.getvalue()
         except Exception as e:
-            logger.warning(f"Could not adjust for ambient noise: {e}")
+            logger.error(f"Microphone recording failed: {e}")
+            return b""
 
     async def transcribe_audio(self, audio_data: bytes, language: str = 'en') -> Tuple[str, float]:
         """Transcribe audio to text using speech recognition"""
@@ -88,7 +101,6 @@ class VoiceTranslationService:
                 audio = AudioSegment.from_file(audio_buffer)
 
             normalized_audio = audio.normalize()
-
             chunks = split_on_silence(
                 normalized_audio,
                 min_silence_len=500,
@@ -139,8 +151,8 @@ class VoiceTranslationService:
         return "en", 1.0  # fallback
 
     async def translate_voice(
-        self, 
-        audio_data: bytes, 
+        self,
+        audio_data: bytes,
         target_language: str,
         source_language: Optional[str] = None,
         domain: str = "healthcare",
@@ -176,7 +188,7 @@ class VoiceTranslationService:
             audio_url = None
             if generate_audio and translation_result.translated_text:
                 translated_audio = await self.generate_speech(
-                    translation_result.translated_text, 
+                    translation_result.translated_text,
                     target_language
                 )
                 if translated_audio:
@@ -198,6 +210,7 @@ class VoiceTranslationService:
         except Exception as e:
             logger.error(f"Voice translation failed: {str(e)}", exc_info=True)
             raise ValueError(f"Voice translation failed: {str(e)}")
+
 
 # Global voice translation service instance
 voice_translation_service = VoiceTranslationService()

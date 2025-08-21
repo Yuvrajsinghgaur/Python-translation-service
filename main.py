@@ -127,30 +127,54 @@ class TranslationService:
         self.language_detector = None
         self.healthcare_terms = self._load_healthcare_terms()
         self.translation_cache = {}
+        self.initialized = False
         
     async def initialize(self):
-        """Initialize all translation models and services"""
+        """Initialize only essential components"""
         logger.info("Initializing translation service...")
         
         try:
-            # Load sentence transformer for semantic similarity
-            self.sentence_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-            
-            # Load language detection pipeline
-            self.language_detector = pipeline("text-classification", 
-                                             model="papluca/xlm-roberta-base-language-detection")
-            
-            # Load specialized healthcare translation models
-            await self._load_healthcare_models()
-            
-            # Load general purpose models
-            await self._load_general_models()
-            
+            # Load only lightweight components initially
+            self.healthcare_terms = self._load_healthcare_terms()
+            self.initialized = True
             logger.info("Translation service initialized successfully")
             
         except Exception as e:
             logger.error(f"Failed to initialize translation service: {e}")
             raise
+
+    async def _load_model_if_needed(self, source_lang: str, target_lang: str, domain: str):
+        """Load model only when needed"""
+        model_key = f"{source_lang}-{target_lang}-{domain}"
+        
+        if model_key not in self.models:
+            await self._load_specific_model(source_lang, target_lang, domain)
+
+    async def _load_specific_model(self, source_lang: str, target_lang: str, domain: str):
+        """Load a specific model on demand"""
+        try:
+            model_name = self._get_model_name(source_lang, target_lang, domain)
+            
+            if "mbart" in model_name:
+                from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
+                tokenizer = MBart50TokenizerFast.from_pretrained(model_name)
+                model = MBartForConditionalGeneration.from_pretrained(model_name)
+            else:
+                tokenizer = MarianTokenizer.from_pretrained(model_name)
+                model = MarianMTModel.from_pretrained(model_name)
+            
+            model_key = f"{source_lang}-{target_lang}-{domain}"
+            self.models[model_key] = TranslationModel(
+                name=model_name,
+                tokenizer=tokenizer,
+                model=model,
+                supported_languages=[source_lang, target_lang],
+                domain=domain
+            )
+            logger.info(f"Loaded model: {model_key}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to load model {model_name}: {e}")
 
     async def _load_healthcare_models(self):
         """Load healthcare-specialized translation models"""

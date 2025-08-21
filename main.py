@@ -729,12 +729,6 @@ async def health_check():
         "image_service_available": image_translation_service is not None,
         "features": ["text_translation", "voice_translation", "image_translation", "medical_document_extraction"]
     }
-
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    port = int(os.environ.get("PORT", 8000))  # Render provides PORT environment variable
+    uvicorn.run(app, host="0.0.0.0", port=port)

@@ -37,44 +37,73 @@
 # python-dotenv==1.0.0
 # aiofiles==23.2.1
 
+# # Core FastAPI and server dependencies
+# fastapi==0.104.1
+# uvicorn[standard]==0.24.0
+# httpx==0.25.2
+# pydantic==2.5.0
+
+# # Machine Learning and NLP
+# # Machine Learning and NLP
+# torch>=2.8.0
+# torchvision>=0.19.0
+# transformers>=4.36.0
+# sentence-transformers>=2.7.0
+# huggingface_hub>=0.23.0
+# langdetect>=1.0.9
+# spacy>=3.7.2
+# scikit-learn>=1.3.2
+# numpy>=1.24.3
+
+# # Language models and tokenizers
+# sentencepiece==0.1.99
+# sacremoses==0.1.1
+# protobuf==3.20.2
+
+# # Voice Translation Dependencies
+# SpeechRecognition==3.10.0
+# pydub==0.25.1
+# gTTS==2.4.0
+# # sounddevice instead of PyAudio (cross-platform & easier to install)
+# sounddevice==0.4.7
+# soundfile==0.12.1
+
+# # Image/OCR Translation Dependencies
+# Pillow==10.1.0
+# opencv-python==4.6.0.66
+# pytesseract==0.3.10
+# easyocr==1.7.0
+# paddlepaddle==2.5.2
+# paddleocr==2.7.0.3
+
+# # Utilities
+# python-multipart==0.0.6
+# python-dotenv==1.0.0
+# aiofiles==23.2.1
+
+# gunicorn==21.2.0
+
+
 # Core FastAPI and server dependencies
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-httpx==0.25.2
+httpx
 pydantic==2.5.0
 
-# Machine Learning and NLP
-# Machine Learning and NLP
-torch>=2.8.0
-torchvision>=0.19.0
-transformers>=4.36.0
-sentence-transformers>=2.7.0
-huggingface_hub>=0.23.0
-langdetect>=1.0.9
-spacy>=3.7.2
-scikit-learn>=1.3.2
-numpy>=1.24.3
+# Language detection and translation (lightweight)
+langdetect==1.0.9
 
-# Language models and tokenizers
-sentencepiece==0.1.99
-sacremoses==0.1.1
-protobuf==3.20.2
+# For basic NLP and translation pipelines (optional, can keep or remove according to your codebase needs)
+spacy==3.7.2
+scikit-learn==1.3.2
+numpy==1.24.3
 
-# Voice Translation Dependencies
+# Voice transcription dependencies
 SpeechRecognition==3.10.0
 pydub==0.25.1
 gTTS==2.4.0
-# sounddevice instead of PyAudio (cross-platform & easier to install)
 sounddevice==0.4.7
 soundfile==0.12.1
-
-# Image/OCR Translation Dependencies
-Pillow==10.1.0
-opencv-python==4.6.0.66
-pytesseract==0.3.10
-easyocr==1.7.0
-paddlepaddle==2.5.2
-paddleocr==2.7.0.3
 
 # Utilities
 python-multipart==0.0.6
@@ -82,4 +111,8 @@ python-dotenv==1.0.0
 aiofiles==23.2.1
 
 gunicorn==21.2.0
+
+googletrans==4.0.0rc1
+
+
 

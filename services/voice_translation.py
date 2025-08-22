@@ -238,7 +238,6 @@ import io
 import base64
 
 
-import sounddevice as sd
 import soundfile as sf
 import numpy as np
 import speech_recognition as sr
@@ -272,28 +271,7 @@ class VoiceTranslationResult:
 class VoiceTranslationService:
     def __init__(self):
         self.recognizer = sr.Recognizer()
-        # ❌ Removed PyAudio Microphone dependency
-
-
-    async def record_audio(self, duration: int = 5, samplerate: int = 16000) -> bytes:
-        """
-        Record audio from microphone using sounddevice and return WAV bytes.
-        """
-        try:
-            logger.info(f"Recording {duration}s of audio at {samplerate}Hz...")
-            recording = sd.rec(
-                int(duration * samplerate),
-                samplerate=samplerate,
-                channels=1,
-                dtype="int16"
-            )
-            sd.wait()
-            with io.BytesIO() as buffer:
-                sf.write(buffer, recording, samplerate, format="WAV")
-                return buffer.getvalue()
-        except Exception as e:
-            logger.error(f"Microphone recording failed: {e}")
-            return b""
+        # ❌ Removed PyAudio Microphone and sounddevice dependency
 
 
     async def transcribe_audio(self, audio_data: bytes, language: str = 'en') -> Tuple[str, float]:
@@ -467,6 +445,7 @@ class VoiceTranslationService:
         except Exception as e:
             logger.error(f"Voice translation failed: {str(e)}", exc_info=True)
             raise ValueError(f"Voice translation failed: {str(e)}")
+
 
 
 

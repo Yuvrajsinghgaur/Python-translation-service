@@ -17,18 +17,8 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks, File, UploadFile, F
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import httpx
-from transformers import (
-    AutoTokenizer, 
-    AutoModelForSeq2SeqLM, 
-    pipeline,
-    MarianMTModel,
-    MarianTokenizer
-)
-
-import torch
 from langdetect import detect, detect_langs
 import spacy
-from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 

@@ -30,7 +30,6 @@ from services.voice_translation import voice_translation_service, VoiceTranslati
 # from services.image_translation import image_translation_service, ImageTranslationResult  # Commented out
 
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -130,23 +129,74 @@ class TranslationService:
         self.healthcare_terms = self._load_healthcare_terms()
         self.translation_cache = {}
         self.initialized = False
-        
+
+    def _load_healthcare_terms(self) -> Dict[str, Dict[str, str]]:
+        """Load healthcare terminology dictionaries"""
+        return {
+            "en": {
+                "dementia": "dementia",
+                "alzheimer": "Alzheimer's disease",
+                "palliative": "palliative care",
+                "rehabilitation": "rehabilitation",
+                "wound care": "wound care",
+                "medication": "medication",
+                "nursing": "nursing",
+                "long-term care": "long-term care",
+                "resident": "resident",
+                "patient": "patient"
+            },
+            "de": {
+                "dementia": "Demenz",
+                "alzheimer": "Alzheimer-Krankheit",
+                "palliative": "Palliativpflege",
+                "rehabilitation": "Rehabilitation",
+                "wound care": "Wundversorgung",
+                "medication": "Medikation",
+                "nursing": "Krankenpflege",
+                "long-term care": "Langzeitpflege",
+                "resident": "Bewohner",
+                "patient": "Patient"
+            },
+            "fr": {
+                "dementia": "démence",
+                "alzheimer": "maladie d'Alzheimer",
+                "palliative": "soins palliatifs",
+                "rehabilitation": "réhabilitation",
+                "wound care": "soins des plaies",
+                "medication": "médication",
+                "nursing": "soins infirmiers",
+                "long-term care": "soins de longue durée",
+                "resident": "résident",
+                "patient": "patient"
+            },
+            "it": {
+                "dementia": "demenza",
+                "alzheimer": "malattia di Alzheimer",
+                "palliative": "cure palliative",
+                "rehabilitation": "riabilitazione",
+                "wound care": "cura delle ferite",
+                "medication": "farmaci",
+                "nursing": "assistenza infermieristica",
+                "long-term care": "assistenza a lungo termine",
+                "resident": "residente",
+                "patient": "paziente"
+            }
+        }
+
     async def initialize(self):
         """Initialize only essential components"""
         logger.info("Initializing translation service...")
-        
+
         try:
-            # Load only lightweight components initially
             self.healthcare_terms = self._load_healthcare_terms()
             self.initialized = True
             logger.info("Translation service initialized successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize translation service: {e}")
             raise
 
-
-    # ... (rest of the TranslationService class code unchanged) ...
+    # ... (rest of the TranslationService methods unchanged, keep as in your original code) ...
 
 
 # Initialize translation service
@@ -166,7 +216,7 @@ async def root():
         "service": "NurseConnect AI Translation Service",
         "status": "healthy",
         "version": "2.0.0",
-        "features": ["text", "voice"],
+        "features": ["text", "voice"],  # Image-related feature removed
         "available_models": len(translation_service.models),
         "supported_domains": ["general", "healthcare"]
     }
@@ -177,7 +227,7 @@ async def detect_language(request: LanguageDetectionRequest):
     """Detect the language of input text"""
     try:
         language, confidence, all_languages = await translation_service.detect_language(request.text)
-        
+
         return LanguageDetectionResponse(
             language=language,
             confidence=confidence,
@@ -209,10 +259,10 @@ async def translate(request: TranslationRequest):
 async def translate_batch(request: BatchTranslationRequest):
     """Translate multiple texts in batch"""
     start_time = datetime.now()
-    
+
     try:
         translations = []
-        
+
         for text in request.texts:
             result = await translation_service.translate_text(
                 text=text,
@@ -221,9 +271,9 @@ async def translate_batch(request: BatchTranslationRequest):
                 domain=request.domain
             )
             translations.append(result)
-        
+
         total_time = (datetime.now() - start_time).total_seconds()
-        
+
         return BatchTranslationResponse(
             translations=translations,
             total_processing_time=total_time
@@ -247,16 +297,15 @@ async def translate_voice(
         audio_data = await audio_file.read()
         print(f"Received audio length: {len(audio_data)} bytes, filename: {audio_file.filename}")
 
-
         # Convert to WAV if not already in WAV format
         if not audio_file.filename.lower().endswith(".wav"):
             print("Converting audio to WAV format...")
+            from pydub import AudioSegment  # Import here safely
             audio = AudioSegment.from_file(io.BytesIO(audio_data))
             audio = audio.set_frame_rate(16000).set_channels(1)  # Mono, 16kHz for STT
             wav_io = io.BytesIO()
             audio.export(wav_io, format="wav")
             audio_data = wav_io.getvalue()
-
 
         # Process voice translation
         result = await voice_translation_service.translate_voice(
@@ -266,7 +315,6 @@ async def translate_voice(
             domain=domain,
             generate_audio=generate_audio
         )
-
 
         return {
             "original_text": result.original_text,
@@ -279,70 +327,19 @@ async def translate_voice(
             "audio_url": result.audio_url
         }
 
-
     except Exception as e:
         logger.exception("Voice translation error (full traceback):")
         raise HTTPException(status_code=500, detail=f"Voice translation failed: {str(e)}")
 
 
-# Image translation endpoints and imports commented out as not currently used
+# Commented out image translation endpoints and imports as not used
 # @app.post("/translate-image")
-# async def translate_image(
-#     image_file: UploadFile = File(...),
-#     target_language: str = Form(...),
-#     source_language: Optional[str] = Form(None),
-#     domain: str = Form("healthcare"),
-#     document_type: str = Form("general")
-# ):
-#     """Translate text from images"""
-#     try:
-#         image_data = await image_file.read()
-#         result = await image_translation_service.translate_image_text(
-#             image_data=image_data,
-#             target_language=target_language,
-#             source_language=source_language,
-#             domain=domain
-#         )
-#         return {
-#             "original_image_url": result.original_image_url,
-#             "extracted_text": result.extracted_text,
-#             "translated_text": result.translated_text,
-#             "text_regions": [
-#                 {
-#                     "text": region.text,
-#                     "confidence": region.confidence,
-#                     "bbox": region.bbox,
-#                     "language": region.language
-#                 }
-#                 for region in result.text_regions
-#             ],
-#             "original_language": result.original_language,
-#             "target_language": result.target_language,
-#             "confidence": result.confidence,
-#             "processing_time": result.processing_time,
-#             "annotated_image_url": result.annotated_image_url
-#         }
-#     except Exception as e:
-#         logger.error(f"Image translation error: {e}")
-#         raise HTTPException(status_code=500, detail=f"Image translation failed: {str(e)}")
-
+# async def translate_image(...):
+#     ...
 
 # @app.post("/extract-medical-document")
-# async def extract_medical_document(
-#     image_file: UploadFile = File(...),
-#     document_type: str = Form("general")
-# ):
-#     """Extract structured text from medical documents"""
-#     try:
-#         image_data = await image_file.read()
-#         result = await image_translation_service.extract_text_from_medical_document(
-#             image_data=image_data,
-#             document_type=document_type
-#         )
-#         return result
-#     except Exception as e:
-#         logger.error(f"Medical document extraction error: {e}")
-#         raise HTTPException(status_code=500, detail=f"Document extraction failed: {str(e)}")
+# async def extract_medical_document(...):
+#     ...
 
 
 @app.get("/models")
@@ -371,6 +368,7 @@ async def health_check():
         "image_service_available": False,  # image translation disabled
         "features": ["text_translation", "voice_translation"]
     }
+
 
 # if __name__ == "__main__":
 #     port = int(os.environ.get("PORT", 8000))  # Render provides PORT environment variable
